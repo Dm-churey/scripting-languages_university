@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSS Трекер</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <h1>RSS Трекер</h1>
+  
+  <div class="tabs">
+    <div class="tab active" onclick="openTab(event, 'news-tab')">Новости</div>
+    <div class="tab" onclick="openTab(event, 'rss-tab')">RSS-ленты</div>
+    <div class="tab" onclick="openTab(event, 'keywords-tab')">Ключевые слова</div>
+  </div>
+  
+  <div id="news-tab" class="tab-content active">
+    <h2>Найденные новости</h2>
+    <% if (news && news.length > 0) { %>
+      <% news.forEach(item => { %>
+        <div class="news-item">
+          <h3><a href="<%= item.link %>" target="_blank"><%= item.title %></a></h3>
+          <div class="news-meta">
+            Источник: <%= item.source_name %> | 
+            Ключевое слово: <%= item.keyword %> | 
+            Дата публикации: <%= new Date(item.pub_date).toLocaleString() %> | 
+            Дата обнаружения: <%= new Date(item.found_date).toLocaleString() %>
+          </div>
+          <div class="news-content">
+            <%= item.content %>
+          </div>
+          <a href="<%= item.link %>" target="_blank">Читать полностью</a>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p>Новости не найдены. Возможно, нужно подождать, пока сервис обработает RSS-ленты.</p>
+    <% } %>
+  </div>
+  
+  <div id="rss-tab" class="tab-content">
+    <h2>Управление RSS-лентами</h2>
+    <form id="rss-form">
+      <div class="form-group">
+        <label for="rss-url">URL RSS-ленты:</label>
+        <input type="url" id="rss-url" required>
+      </div>
+      <div class="form-group">
+        <label for="rss-name">Название:</label>
+        <input type="text" id="rss-name" required>
+      </div>
+      <button type="submit">Добавить RSS-ленту</button>
+    </form>
+    
+    <h3>Список RSS-лент</h3>
+    <table id="rss-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Название</th>
+          <th>URL</th>
+          <th>Активна</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+  
+  <div id="keywords-tab" class="tab-content">
+    <h2>Управление ключевыми словами</h2>
+    <form id="keyword-form">
+      <div class="form-group">
+        <label for="keyword">Ключевое слово:</label>
+        <input type="text" id="keyword" required>
+      </div>
+      <button type="submit">Добавить ключевое слово</button>
+    </form>
+    
+    <h3>Список ключевых слов</h3>
+    <table id="keywords-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Слово</th>
+          <th>Активно</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+  
+  <script src="/js/main.js"></script>
+</body>
+</html>

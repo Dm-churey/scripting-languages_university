@@ -280,6 +280,13 @@ async function parseRssFeed(source, keywords) {
 
 async function checkAllRssFeeds() {
   try {
+    const initialCount = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM news", (err, row) => {
+        if (err) reject(err);
+        else resolve(row.count);
+      });
+    });
+
     const [keywords, sources] = await Promise.all([
       getActiveKeywords(),
       getActiveRssSources()
@@ -287,15 +294,19 @@ async function checkAllRssFeeds() {
     
     await Promise.all(sources.map(source => parseRssFeed(source, keywords)));
     
-    const totalNewItems = await new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) as count FROM news WHERE found_date >= datetime('now', '-3 minutes')", (err, row) => {
+    const finalCount = await new Promise((resolve, reject) => {
+      db.get("SELECT COUNT(*) as count FROM news", (err, row) => {
         if (err) reject(err);
         else resolve(row.count);
       });
     });
+
+    const totalNewItems = finalCount - initialCount;
     
     if (totalNewItems > 0) {
       log(`Проверка завершена. Найдено ${totalNewItems} новых новостей`);
+    } else {
+      log('Проверка завершена. Новых новостей не найдено');
     }
   } catch (error) {
     log(`Ошибка при проверке RSS-лент: ${error.message}`, 'error');

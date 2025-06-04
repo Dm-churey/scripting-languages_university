@@ -1,5 +1,5 @@
 ## Для запуска проекта необходимо:
- 1) Склонировать проект командой из репозитория git clone 
+ 1) Склонировать проект командой из репозитория git clone https://github.com/Dm-churey/scripting-languages_university.git
  2) Установить пакеты командой npm install;
  3) Зпустить проект командой npm start;
  4) Открыть проект по адресу http://localhost:3001/

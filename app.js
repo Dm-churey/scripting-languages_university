@@ -5,6 +5,8 @@ const cron = require('node-cron');
 const path = require('path');
 const bodyParser = require('body-parser');
 const fetch = require('node-fetch');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./swagger');
 
 // Функция для логирования с временной меткой
 function log(message, type = 'info') {
@@ -50,6 +52,27 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
+/**
+ * @swagger
+ * /api-docs.json:
+ *   get:
+ *     summary: Получить OpenAPI спецификацию в формате JSON
+ *     description: Возвращает полную документацию API в формате JSON
+ *     tags: [Documentation]
+ *     responses:
+ *       200:
+ *         description: OpenAPI спецификация успешно получена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ */
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpecs);
+});
 
 const db = new sqlite3.Database('./rss_tracker.db', (err) => {
   if (err) {
@@ -339,7 +362,25 @@ app.get('/', (req, res) => {
   });
 });
 
-// API для получения всех новостей
+/**
+ * @swagger
+ * /api/news:
+ *   get:
+ *     summary: Получить список всех новостей
+ *     description: Возвращает список всех новостей, отсортированных по дате обнаружения
+ *     tags: [News]
+ *     responses:
+ *       200:
+ *         description: Список новостей успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/News'
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.get('/api/news', (req, res) => {
   db.all(`
     SELECT n.id, n.title, n.content, n.link, n.pub_date, n.found_date, 
@@ -358,7 +399,25 @@ app.get('/api/news', (req, res) => {
   });
 });
 
-// API для получения всех RSS-лент
+/**
+ * @swagger
+ * /api/rss-sources:
+ *   get:
+ *     summary: Получить список всех RSS-лент
+ *     description: Возвращает список всех RSS-лент, включая их статус активности
+ *     tags: [RSS Sources]
+ *     responses:
+ *       200:
+ *         description: Список RSS-лент успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RssSource'
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.get('/api/rss-sources', (req, res) => {
   db.all("SELECT * FROM rss_sources", (err, rows) => {
     if (err) {
@@ -370,7 +429,41 @@ app.get('/api/rss-sources', (req, res) => {
   });
 });
 
-// API для добавления новой RSS-ленты
+/**
+ * @swagger
+ * /api/rss-sources:
+ *   post:
+ *     summary: Добавить новую RSS-ленту
+ *     description: Добавляет новую RSS-ленту в систему
+ *     tags: [RSS Sources]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - url
+ *               - name
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: URL RSS-ленты
+ *               name:
+ *                 type: string
+ *                 description: Название источника
+ *     responses:
+ *       200:
+ *         description: RSS-лента успешно добавлена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RssSource'
+ *       400:
+ *         description: Неверные параметры запроса
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.post('/api/rss-sources', (req, res) => {
   const { url, name } = req.body;
   
@@ -388,7 +481,48 @@ app.post('/api/rss-sources', (req, res) => {
   });
 });
 
-// API для обновления RSS-ленты
+/**
+ * @swagger
+ * /api/rss-sources/{id}:
+ *   put:
+ *     summary: Обновить RSS-ленту
+ *     description: Обновляет информацию о существующей RSS-ленте
+ *     tags: [RSS Sources]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID RSS-ленты
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: URL RSS-ленты
+ *               name:
+ *                 type: string
+ *                 description: Название источника
+ *               active:
+ *                 type: boolean
+ *                 description: Статус активности
+ *     responses:
+ *       200:
+ *         description: RSS-лента успешно обновлена
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RssSource'
+ *       404:
+ *         description: RSS-лента не найдена
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.put('/api/rss-sources/:id', (req, res) => {
   const { id } = req.params;
   const { url, name, active } = req.body;
@@ -411,7 +545,28 @@ app.put('/api/rss-sources/:id', (req, res) => {
   );
 });
 
-// API для удаления RSS-ленты
+/**
+ * @swagger
+ * /api/rss-sources/{id}:
+ *   delete:
+ *     summary: Удалить RSS-ленту
+ *     description: Удаляет RSS-ленту из системы
+ *     tags: [RSS Sources]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID RSS-ленты
+ *     responses:
+ *       200:
+ *         description: RSS-лента успешно удалена
+ *       404:
+ *         description: RSS-лента не найдена
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.delete('/api/rss-sources/:id', (req, res) => {
   const { id } = req.params;
   
@@ -429,7 +584,25 @@ app.delete('/api/rss-sources/:id', (req, res) => {
   });
 });
 
-// API для получения всех ключевых слов
+/**
+ * @swagger
+ * /api/keywords:
+ *   get:
+ *     summary: Получить список всех ключевых слов
+ *     description: Возвращает список всех ключевых слов, включая их статус активности
+ *     tags: [Keywords]
+ *     responses:
+ *       200:
+ *         description: Список ключевых слов успешно получен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Keyword'
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.get('/api/keywords', (req, res) => {
   db.all("SELECT * FROM keywords", (err, rows) => {
     if (err) {
@@ -441,7 +614,37 @@ app.get('/api/keywords', (req, res) => {
   });
 });
 
-// API для добавления нового ключевого слова
+/**
+ * @swagger
+ * /api/keywords:
+ *   post:
+ *     summary: Добавить новое ключевое слово
+ *     description: Добавляет новое ключевое слово в систему
+ *     tags: [Keywords]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - word
+ *             properties:
+ *               word:
+ *                 type: string
+ *                 description: Ключевое слово
+ *     responses:
+ *       200:
+ *         description: Ключевое слово успешно добавлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Keyword'
+ *       400:
+ *         description: Неверные параметры запроса
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.post('/api/keywords', (req, res) => {
   const { word } = req.body;
   
@@ -459,7 +662,45 @@ app.post('/api/keywords', (req, res) => {
   });
 });
 
-// API для обновления ключевого слова
+/**
+ * @swagger
+ * /api/keywords/{id}:
+ *   put:
+ *     summary: Обновить ключевое слово
+ *     description: Обновляет информацию о существующем ключевом слове
+ *     tags: [Keywords]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID ключевого слова
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               word:
+ *                 type: string
+ *                 description: Ключевое слово
+ *               active:
+ *                 type: boolean
+ *                 description: Статус активности
+ *     responses:
+ *       200:
+ *         description: Ключевое слово успешно обновлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Keyword'
+ *       404:
+ *         description: Ключевое слово не найдено
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.put('/api/keywords/:id', (req, res) => {
   const { id } = req.params;
   const { word, active } = req.body;
@@ -482,7 +723,28 @@ app.put('/api/keywords/:id', (req, res) => {
   );
 });
 
-// API для удаления ключевого слова
+/**
+ * @swagger
+ * /api/keywords/{id}:
+ *   delete:
+ *     summary: Удалить ключевое слово
+ *     description: Удаляет ключевое слово из системы
+ *     tags: [Keywords]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID ключевого слова
+ *     responses:
+ *       200:
+ *         description: Ключевое слово успешно удалено
+ *       404:
+ *         description: Ключевое слово не найдено
+ *       500:
+ *         description: Ошибка сервера
+ */
 app.delete('/api/keywords/:id', (req, res) => {
   const { id } = req.params;
   

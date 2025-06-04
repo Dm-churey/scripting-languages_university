@@ -5,5 +5,7 @@
   "node-cron": "^3.0.2",
   "node-fetch": "^2.6.9",
   "rss-parser": "^3.13.0",
-  "sqlite3": "^5.1.6"
-}
+  "sqlite3": "^5.1.6",
+  "swagger-jsdoc": "^6.2.8",
+  "swagger-ui-express": "^5.0.1"
+},
